@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="id" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexaStore</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Poppins', sans-serif; }
+    html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow-x: hidden; overflow-y: auto; box-sizing: border-box; }
+    body { overflow-x: hidden !important; touch-action: pan-y pinch-zoom; }
+    * { box-sizing: border-box; }
+    
+    .provider-card { transition: all 0.2s ease; }
+    .provider-card:hover { transform: translateY(-2px); }
+    .provider-card.active { border-color: #dc2626; box-shadow: 0 0 0 2px #dc2626; }
+    
+    .package-card { transition: all 0.15s ease; }
+    .package-card:hover { transform: scale(1.02); }
+    .package-card.selected { border-color: #dc2626; background: #7f1d1d; }
+    
+    .fade-in { animation: fadeIn 0.3s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .toast { animation: slideUp 0.3s ease, fadeOut 0.3s ease 19.7s; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; } }
+    
+    .loading-screen { animation: fadeOutScreen 0.5s ease 1.8s forwards; }
+    @keyframes fadeOutScreen { from { opacity: 1; visibility: visible; } to { opacity: 0; visibility: hidden; } }
+    
+    .spinner { animation: spin 2s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    
+    .pulse-dot { animation: pulseDot 1.5s ease-in-out infinite; }
+    @keyframes pulseDot { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
+    
+    .pending-animation { animation: pendingPulse 2s ease-in-out infinite; }
+    @keyframes pendingPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); } 50% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); } }
+  </style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full bg-black text-white overflow-auto"><!-- Loading Screen -->
+  <div id="loading-screen" class="loading-screen fixed inset-0 bg-black flex flex-col items-center justify-center z-[999]">
+   <div class="flex flex-col items-center gap-6">
+    <div class="relative w-20 h-20">
+     <svg class="w-full h-full spinner" viewbox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="16" stroke="#374151" stroke-width="2" /> <circle cx="20" cy="20" r="16" stroke="#dc2626" stroke-width="2" stroke-dasharray="25.13" stroke-dashoffset="0" stroke-linecap="round" />
+     </svg>
+    </div>
+    <div class="text-center">
+     <h2 class="text-2xl font-bold text-red-600 mb-2">NexaStore</h2>
+     <p class="text-sm text-neutral-400">Memuat aplikasi...</p>
+    </div>
+    <div class="flex gap-2 mt-2">
+     <div class="w-2 h-2 bg-red-600 rounded-full pulse-dot"></div>
+     <div class="w-2 h-2 bg-red-600 rounded-full pulse-dot" style="animation-delay: 0.3s;"></div>
+     <div class="w-2 h-2 bg-red-600 rounded-full pulse-dot" style="animation-delay: 0.6s;"></div>
+    </div>
+   </div>
+  </div>
+  <div id="app" class="w-full min-h-full flex flex-col"><!-- Header -->
+   <header class="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between">
+     <div class="flex items-center gap-2">
+      <div class="w-8 sm:w-9 h-8 sm:h-9 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0"><i data-lucide="zap" class="w-4 sm:w-5 h-4 sm:h-5 text-white"></i>
+      </div>
+      <h1 class="text-base sm:text-lg font-bold text-red-600">NexaStore</h1>
+     </div><button id="menu-toggle" class="sm:hidden w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-white transition flex-shrink-0"> <i data-lucide="menu" class="w-5 h-5"></i> </button>
+    </div><!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden bg-neutral-900 border-t border-neutral-800 max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+     <nav class="space-y-2.5"><a href="#" class="block text-xs sm:text-sm text-neutral-400 hover:text-white transition">Partnership</a> <a href="#" class="block text-xs sm:text-sm text-neutral-400 hover:text-white transition">Reseller</a> <a href="#" class="block text-xs sm:text-sm text-neutral-400 hover:text-white transition">Affiliate</a> <a href="#" class="block text-xs sm:text-sm text-neutral-400 hover:text-white transition">Career</a>
+      <div class="border-t border-neutral-800 pt-2.5 mt-2.5"><a href="#" class="block text-xs sm:text-sm text-neutral-400 hover:text-white transition">Contact Us</a> <a href="#" class="block text-xs sm:text-sm text-neutral-400 hover:text-white transition">Support</a>
+      </div>
+      <div class="flex gap-2 pt-2.5 border-t border-neutral-800"><a href="#" class="w-7 sm:w-8 h-7 sm:h-8 bg-neutral-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition flex-shrink-0">
+        <svg class="w-3.5 sm:w-4 h-3.5 sm:h-4" viewbox="0 0 24 24" fill="currentColor">
+         <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a11.955 11.955 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.485-1.313.474-.431-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.15.268-.462.943-.821.036-.023.077-.048.11-.066 3.418-1.986 5.546-2.979 6.52-3.751.333-.246.626-.435.783-.662.04-.05.061-.1.061-.15 0-.049-.013-.099-.04-.148-.027-.05-.1-.091-.166-.1-.065-.009-.304-.048-.527-.081z" />
+        </svg></a> <a href="#" class="w-7 sm:w-8 h-7 sm:h-8 bg-neutral-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition flex-shrink-0">
+        <svg class="w-3.5 sm:w-4 h-3.5 sm:h-4" viewbox="0 0 24 24" fill="currentColor">
+         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+        </svg></a>
+      </div>
+     </nav>
+    </div>
+   </header><!-- Main -->
+   <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-6 space-y-6"><!-- Tagline -->
+    <p class="text-neutral-400 text-xs sm:text-sm text-center">Isi kuota cepat, mudah &amp; terpercaya</p><!-- Hero Section -->
+    <div class="relative w-full bg-gradient-to-r from-red-600 to-red-700 rounded-2xl overflow-hidden">
+     <div class="relative h-64 flex items-center px-6 text-white">
+      <div class="w-full">
+       <div class="max-w-2xl">
+        <h2 class="text-3xl sm:text-4xl font-black mb-3">Dapatkan Kuota Unlimited</h2>
+        <p class="text-base sm:text-lg mb-6 opacity-90">Nikmati internet cepat dengan harga terjangkau</p>
+       </div>
+      </div>
+      <div class="absolute right-6 top-1/2 -translate-y-1/2 hidden sm:block">
+       <svg class="w-32 h-32 opacity-20" viewbox="0 0 100 100" fill="white" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="30" r="8" /> <rect x="35" y="45" width="30" height="40" rx="3" /> <circle cx="50" cy="55" r="3" />
+       </svg>
+      </div>
+     </div>
+    </div><!-- Phone Input -->
+    <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-4"><label class="text-xs text-neutral-500 font-medium uppercase tracking-wide mb-2 block">Nomor Handphone</label>
+     <div class="flex items-center gap-2"><span class="text-neutral-500 text-lg font-semibold">+62</span> <input id="phone-input" type="tel" maxlength="13" placeholder="8123456789" class="flex-1 bg-transparent text-xl font-semibold outline-none placeholder:text-neutral-700 text-white">
+     </div>
+    </div><!-- Provider Selection -->
+    <div>
+     <h2 class="text-sm font-semibold text-neutral-400 mb-3">Pilih Provider</h2>
+     <div class="grid grid-cols-3 sm:grid-cols-6 gap-2" id="provider-grid"></div>
+    </div><!-- Packages -->
+    <div id="packages-section" class="hidden fade-in">
+     <h2 class="text-sm font-semibold text-neutral-400 mb-3">Pilih Paket <span id="provider-name" class="text-red-500"></span></h2>
+     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="packages-grid"></div>
+    </div><!-- Order Summary -->
+    <div id="summary-section" class="hidden fade-in bg-neutral-900 border border-neutral-800 rounded-xl p-4 space-y-3">
+     <h3 class="font-bold text-sm">Ringkasan Pesanan</h3>
+     <div class="flex justify-between text-sm"><span class="text-neutral-400">Provider</span> <span id="sum-provider" class="font-medium text-white"></span>
+     </div>
+     <div class="flex justify-between text-sm"><span class="text-neutral-400">Paket</span> <span id="sum-package" class="font-medium text-white"></span>
+     </div>
+     <div class="flex justify-between text-sm"><span class="text-neutral-400">Nomor</span> <span id="sum-phone" class="font-medium text-white"></span>
+     </div>
+     <div class="flex justify-between text-sm border-t border-neutral-800 pt-3"><span class="text-neutral-400 font-semibold">Total</span> <span id="sum-price" class="font-bold text-red-500 text-lg"></span>
+     </div><button id="btn-order" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition-colors mt-2">Bayar Sekarang</button>
+    </div>
+   </main><!-- Footer -->
+   <footer class="border-t border-neutral-800 mt-8">
+    <div class="max-w-5xl mx-auto px-4 py-8 space-y-6">
+     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-4">
+      <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:border-red-600 transition space-y-3">
+       <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+         <svg class="w-5 h-5 text-white" viewbox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+         </svg>
+        </div>
+        <h4 class="font-bold text-sm text-white">Harga Termurah</h4>
+       </div>
+       <p class="text-xs text-neutral-400 leading-relaxed">Nikmati paket kuota data dengan harga kompetitif dan terjangkau dibanding operator lain</p>
+      </div>
+      <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:border-red-600 transition space-y-3">
+       <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+         <svg class="w-5 h-5 text-white" viewbox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+         </svg>
+        </div>
+        <h4 class="font-bold text-sm text-white">Proses Instan</h4>
+       </div>
+       <p class="text-xs text-neutral-400 leading-relaxed">Pengisian kuota dilakukan dalam hitungan detik setelah pembayaran berhasil</p>
+      </div>
+      <div class="bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:border-red-600 transition space-y-3">
+       <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+         <svg class="w-5 h-5 text-white" viewbox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+         </svg>
+        </div>
+        <h4 class="font-bold text-sm text-white">100% Legal &amp; Aman</h4>
+       </div>
+       <p class="text-xs text-neutral-400 leading-relaxed">Bekerja sama langsung dengan operator resmi. Data Anda terlindungi dengan enkripsi terkini</p>
+      </div>
+     </div><!-- Links Section -->
+     <div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
+      <div class="space-y-3">
+       <h5 class="font-bold text-xs text-white uppercase tracking-wider">Program</h5>
+       <ul class="space-y-2">
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Partnership</a></li>
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Reseller</a></li>
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Affiliate</a></li>
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Career</a></li>
+       </ul>
+      </div>
+      <div class="space-y-3">
+       <h5 class="font-bold text-xs text-white uppercase tracking-wider">Informasi</h5>
+       <ul class="space-y-2">
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Web Creation</a></li>
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Site Map</a></li>
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Contact Us</a></li>
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Reviews</a></li>
+       </ul>
+      </div>
+      <div class="space-y-3">
+       <h5 class="font-bold text-xs text-white uppercase tracking-wider">Kebijakan</h5>
+       <ul class="space-y-2">
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Terms &amp; Conditions</a></li>
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Privacy Policy</a></li>
+        <li><a href="#" class="text-xs text-neutral-400 hover:text-white transition">Support</a></li>
+       </ul>
+      </div>
+      <div class="space-y-3">
+       <h5 class="font-bold text-xs text-white uppercase tracking-wider">Ikuti Kami</h5>
+       <div class="flex gap-3"><a href="#" class="w-8 h-8 bg-neutral-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition" title="Telegram">
+         <svg class="w-4 h-4" viewbox="0 0 24 24" fill="currentColor">
+          <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a11.955 11.955 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.485-1.313.474-.431-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.15.268-.462.943-.821.036-.023.077-.048.11-.066 3.418-1.986 5.546-2.979 6.52-3.751.333-.246.626-.435.783-.662.04-.05.061-.1.061-.15 0-.049-.013-.099-.04-.148-.027-.05-.1-.091-.166-.1-.065-.009-.304-.048-.527-.081z" />
+         </svg></a> <a href="#" class="w-8 h-8 bg-neutral-800 hover:bg-red-600 rounded-lg flex items-center justify-center transition" title="Facebook">
+         <svg class="w-4 h-4" viewbox="0 0 24 24" fill="currentColor">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+         </svg></a>
+       </div>
+      </div>
+     </div><!-- Divider -->
+     <div class="border-t border-neutral-800 pt-4 text-center text-xs text-neutral-600">
+      <p>© 2024 NexaStore · All Rights Reserved</p>
+      <p class="mt-2">Layanan Resmi Pengisian Kuota Data Terpercaya</p>
+     </div>
+    </div>
+   </footer>
+  </div><!-- Payment Confirmation Modal -->
+  <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[998] flex items-center justify-center p-4">
+   <div class="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"><!-- Header -->
+    <div class="bg-gradient-to-r from-red-600 to-red-700 p-4 flex items-center justify-between sticky top-0">
+     <h2 class="text-lg font-bold text-white">Konfirmasi Pembayaran</h2><button onclick="closePaymentModal()" class="text-white hover:opacity-80 transition"> <i data-lucide="x" class="w-5 h-5"></i> </button>
+    </div><!-- Content -->
+    <div class="p-6 space-y-4"><!-- Payment Image --> <img src="https://h.uguu.se/VYSMwEVa.jpg" alt="Metode Pembayaran" class="w-full rounded-lg border border-neutral-800" loading="lazy" onerror="this.style.background='#262626'; this.alt='Image unavailable';"> <!-- Statistics -->
+     <div class="bg-neutral-800 rounded-lg p-4 space-y-3">
+      <div class="flex justify-between items-center pb-3 border-b border-neutral-700"><span class="text-sm text-neutral-400">Waktu Pembelian</span> <span id="purchase-time" class="text-sm font-semibold text-white">-</span>
+      </div>
+      <div class="flex justify-between items-center pb-3 border-b border-neutral-700"><span class="text-sm text-neutral-400">Waktu Kadaluarsa</span> <span id="expiry-time" class="text-sm font-semibold text-white">-</span>
+      </div>
+      <div class="flex justify-between items-center"><span class="text-sm text-neutral-400">Total Pembayaran</span> <span id="payment-amount" class="text-sm font-bold text-red-500">-</span>
+      </div>
+     </div><!-- Info Text -->
+     <div class="bg-yellow-900 border border-yellow-700 rounded-lg p-3">
+      <p class="text-xs text-yellow-200">⏱️ Silakan selesaikan pembayaran dalam 15 menit. Jika pembayaran tidak terselesaikan dalam waktu tersebut, pesanan akan dibatalkan otomatis.</p>
+     </div><!-- Action Buttons -->
+     <div class="flex gap-3 pt-4"><button onclick="confirmPayment()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors">Sudah Bayar</button> <button onclick="cancelPayment()" class="flex-1 bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-3 rounded-lg transition-colors">Batalkan</button>
+     </div>
+    </div>
+   </div>
+  </div><!-- Pending Notification -->
+  <div id="toast" class="fixed inset-0 hidden z-50 flex items-center justify-center p-4">
+   <div class="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm"></div>
+   <div class="toast relative bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 text-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-cyan-300 border-opacity-40"><!-- Animated background glow -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+     <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-400 rounded-full opacity-20 blur-3xl -mr-16 -mt-16"></div>
+     <div class="absolute bottom-0 left-0 w-24 h-24 bg-blue-400 rounded-full opacity-15 blur-3xl -ml-12 -mb-12"></div>
+    </div><!-- Content -->
+    <div class="relative z-10 p-6 space-y-4"><!-- Top section with spinner and title -->
+     <div class="flex items-start gap-4">
+      <div class="flex-shrink-0">
+       <div class="relative w-14 h-14 pending-animation">
+        <svg class="w-full h-full" viewbox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="18" stroke="rgba(255,255,255,0.2)" stroke-width="2" /> <circle cx="25" cy="25" r="18" stroke="white" stroke-width="2.5" stroke-dasharray="28.3" stroke-dashoffset="0" stroke-linecap="round" class="spinner" />
+        </svg>
+       </div>
+      </div>
+      <div class="flex-1 min-w-0 pt-1">
+       <h2 class="text-xl font-black tracking-tight leading-tight">Proses Pending</h2>
+       <p class="text-cyan-100 text-xs font-medium mt-0.5">Memverifikasi pembayaran...</p>
+      </div>
+     </div><!-- Status tracker -->
+     <div class="bg-white bg-opacity-10 backdrop-blur-md rounded-xl p-4 border border-white border-opacity-20 space-y-2.5">
+      <div class="flex items-center gap-3">
+       <div class="flex-shrink-0 w-8 h-8 bg-white bg-opacity-25 rounded-full flex items-center justify-center">
+        <svg class="w-4 h-4 text-cyan-200" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+         <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+       </div>
+       <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-white">Pembayaran Diterima</p>
+       </div><span class="text-xs text-cyan-200 font-medium flex-shrink-0">✓</span>
+      </div>
+      <div class="flex items-center gap-3">
+       <div class="flex-shrink-0 w-8 h-8 bg-white bg-opacity-30 rounded-full flex items-center justify-center pending-animation">
+        <div class="w-2 h-2 bg-cyan-300 rounded-full pulse-dot"></div>
+       </div>
+       <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-white">Verifikasi <span class="text-cyan-200">(1-10 min)</span></p>
+       </div>
+      </div>
+      <div class="flex items-center gap-3">
+       <div class="flex-shrink-0 w-8 h-8 bg-white bg-opacity-15 rounded-full flex items-center justify-center">
+        <svg class="w-4 h-4 text-cyan-200 opacity-60" viewbox="0 0 24 24" fill="currentColor">
+         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+        </svg>
+       </div>
+       <div class="flex-1 min-w-0">
+        <p class="text-xs font-semibold text-white">Kuota Siap Diisi</p>
+       </div>
+      </div>
+     </div><!-- Quick tips -->
+     <div class="space-y-2">
+      <div class="flex items-start gap-2 bg-white bg-opacity-5 rounded-lg p-2.5 border border-white border-opacity-10"><span class="text-sm flex-shrink-0">📱</span>
+       <p class="text-xs text-cyan-50 leading-snug">Jangan tutup halaman atau keluar aplikasi</p>
+      </div>
+      <div class="flex items-start gap-2 bg-white bg-opacity-5 rounded-lg p-2.5 border border-white border-opacity-10"><span class="text-sm flex-shrink-0">⏱️</span>
+       <p class="text-xs text-cyan-50 leading-snug">Proses verifikasi berlangsung otomatis</p>
+      </div>
+     </div>
+    </div><!-- Footer -->
+    <div class="relative z-10 px-6 py-3 bg-white bg-opacity-5 border-t border-white border-opacity-10 text-center">
+     <p class="text-xs text-cyan-200 font-mono leading-snug">ID: <span class="font-bold text-cyan-300" id="trx-id">#TRX-2024-001</span></p>
+    </div>
+   </div>
+  </div><!-- Live Chat Bubble -->
+  <div id="chat-bubble" class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3"><!-- Chat Window -->
+   <div id="chat-window" class="hidden bg-white text-black rounded-2xl shadow-2xl w-80 h-96 flex flex-col overflow-hidden"><!-- Header -->
+    <div class="bg-red-600 text-white p-4 flex items-center justify-between flex-shrink-0">
+     <div class="flex items-center gap-3">
+      <svg class="w-10 h-10 bg-red-700 rounded-full p-2" viewbox="0 0 24 24" fill="currentColor">
+       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
+      </svg>
+      <div>
+       <h3 class="font-bold text-sm">Customer Service</h3>
+       <p class="text-xs opacity-90">Usually replies instantly</p>
+      </div>
+     </div><button id="close-chat" class="text-white hover:opacity-80 transition flex-shrink-0"> <i data-lucide="x" class="w-5 h-5"></i> </button>
+    </div><!-- Messages -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-50">
+     <div class="flex gap-2">
+      <svg class="w-8 h-8 bg-red-600 rounded-full p-1.5 flex-shrink-0" viewbox="0 0 24 24" fill="white">
+       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
+      </svg>
+      <div class="bg-white border border-neutral-200 rounded-xl px-3 py-2 max-w-xs">
+       <p class="text-sm text-neutral-800">Halo! 👋 Ada yang bisa kami bantu?</p><span class="text-xs text-neutral-400 mt-1 block">14:32</span>
+      </div>
+     </div><!-- Quick Questions -->
+     <div id="quick-questions" class="mt-4 flex flex-col gap-2"><button onclick="selectQuestion('Bagaimana cara mengisi kuota?')" class="bg-red-50 hover:bg-red-100 text-left border border-red-200 rounded-lg px-3 py-2.5 transition"> <p class="text-xs font-semibold text-red-700">❓ Bagaimana cara mengisi kuota?</p><p class="text-xs text-red-600 mt-1">Pelajari langkah-langkahnya</p></button> <button onclick="selectQuestion('Berapa lama proses pengisian?')" class="bg-blue-50 hover:bg-blue-100 text-left border border-blue-200 rounded-lg px-3 py-2.5 transition"> <p class="text-xs font-semibold text-blue-700">⏱️ Berapa lama proses pengisian?</p><p class="text-xs text-blue-600 mt-1">Info waktu proses</p></button> <button onclick="selectQuestion('Apa metode pembayaran yang tersedia?')" class="bg-purple-50 hover:bg-purple-100 text-left border border-purple-200 rounded-lg px-3 py-2.5 transition"> <p class="text-xs font-semibold text-purple-700">💳 Apa metode pembayaran yang tersedia?</p><p class="text-xs text-purple-600 mt-1">Lihat pilihan pembayaran</p></button> <button onclick="selectQuestion('Bagaimana jika pengisian gagal?')" class="bg-orange-50 hover:bg-orange-100 text-left border border-orange-200 rounded-lg px-3 py-2.5 transition"> <p class="text-xs font-semibold text-orange-700">⚠️ Bagaimana jika pengisian gagal?</p><p class="text-xs text-orange-600 mt-1">Garansi &amp; jaminan refund</p></button>
+     </div>
+     <div id="waiting-message" class="hidden mt-3 text-center">
+      <p class="text-xs text-neutral-600 font-medium">Harap sabar, pesanan Anda sedang diproses...</p>
+     </div>
+    </div><!-- Input -->
+    <div class="border-t border-neutral-200 p-3 flex gap-2 flex-shrink-0"><input id="chat-input" type="text" placeholder="Ketik pesan..." class="flex-1 bg-neutral-100 border border-neutral-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-600 transition text-black placeholder-neutral-500"> <button id="send-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition flex items-center justify-center flex-shrink-0 font-semibold text-sm">Kirim</button>
+    </div>
+   </div><!-- Chat Button --> <button id="chat-btn" class="bg-red-600 hover:bg-red-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition transform hover:scale-110 z-50"> <i data-lucide="message-circle" class="w-6 h-6"></i> </button>
+  </div>
+  <script>
+    const providers = [
+      { id: 'telkomsel', name: 'Telkomsel', color: '#e11d48' },
+      { id: 'xl', name: 'XL', color: '#2563eb' },
+      { id: 'axis', name: 'Axis', color: '#7c3aed' },
+      { id: 'tri', name: 'Tri', color: '#f59e0b' },
+      { id: 'im3', name: 'IM3', color: '#eab308' },
+      { id: 'byu', name: 'by.U', color: '#8b5cf6' }
+    ];
+
+    const packages = {
+      telkomsel: [
+        { name: '15 GB', duration: '30 Hari', price: 20000 },
+        { name: '20 GB', duration: '30 Hari', price: 25000 },
+        { name: '25 GB', duration: '30 Hari', price: 30000 },
+        { name: '35 GB', duration: '30 Hari', price: 40000 },
+        { name: '45 GB', duration: '30 Hari', price: 50000 },
+        { name: '55 GB', duration: '30 Hari', price: 60000 },
+        { name: '60 GB', duration: '30 Hari', price: 70000 },
+        { name: '65 GB', duration: '30 Hari', price: 75000 },
+        { name: '76 GB', duration: '30 Hari', price: 85000 },
+        { name: '80 GB', duration: '30 Hari', price: 90000 },
+        { name: '100 GB', duration: '30 Hari', price: 120000 },
+        { name: '150 GB', duration: '30 Hari', price: 165000 },
+        { name: '160 GB', duration: '30 Hari', price: 180000 },
+        { name: '200 GB', duration: '30 Hari', price: 200000 },
+        { name: 'Unlimited', duration: '30 Hari', price: 280000 },
+      ],
+      xl: [
+        { name: '13 GB', duration: '30 Hari', price: 15000 },
+        { name: '17 GB', duration: '30 Hari', price: 20000 },
+        { name: '23 GB', duration: '30 Hari', price: 25000 },
+        { name: '27 GB', duration: '30 Hari', price: 30000 },
+        { name: '35 GB', duration: '30 Hari', price: 40000 },
+        { name: '40 GB', duration: '30 Hari', price: 50000 },
+        { name: '55 GB', duration: '30 Hari', price: 60000 },
+        { name: '60 GB', duration: '30 Hari', price: 70000 },
+        { name: '65 GB', duration: '30 Hari', price: 75000 },
+        { name: '80 GB', duration: '30 Hari', price: 85000 },
+        { name: '100 GB', duration: '30 Hari', price: 92000 },
+        { name: '150 GB', duration: '30 Hari', price: 122000 },
+        { name: '200 GB', duration: '30 Hari', price: 140000 },
+        { name: '300 GB', duration: '30 Hari', price: 165000 },
+        { name: 'Unlimited', duration: '30 Hari', price: 175000 },
+      ],
+      axis: [
+        { name: '12 GB', duration: '30 Hari', price: 15000 },
+        { name: '17 GB', duration: '30 Hari', price: 20000 },
+        { name: '23 GB', duration: '30 Hari', price: 25000 },
+        { name: '30 GB', duration: '30 Hari', price: 35000 },
+        { name: '45 GB', duration: '30 Hari', price: 40000 },
+        { name: '50 GB', duration: '30 Hari', price: 50000 },
+        { name: '65 GB', duration: '30 Hari', price: 60000 },
+        { name: '77 GB', duration: '30 Hari', price: 85000 },
+        { name: '95 GB', duration: '30 Hari', price: 100000 },
+        { name: '120 GB', duration: '30 Hari', price: 110000 },
+        { name: '90 GB', duration: '30 Hari', price: 130000 },
+        { name: '120 GB', duration: '30 Hari', price: 142000 },
+        { name: '150 GB', duration: '30 Hari', price: 150000 },
+        { name: '200 GB', duration: '30 Hari', price: 162000 },
+        { name: 'Unlimited', duration: '30 Hari', price: 170000 },
+      ],
+      tri: [
+  { name: '35 GB', duration: '30 Hari', price: 22000 },
+  { name: '45 GB', duration: '30 Hari', price: 27000 },
+  { name: '60 GB', duration: '30 Hari', price: 32000 },
+  { name: '75 GB', duration: '30 Hari', price: 37000 },
+  { name: '90 GB', duration: '30 Hari', price: 43000 },
+  { name: '110 GB', duration: '30 Hari', price: 48000 },
+  { name: '130 GB', duration: '30 Hari', price: 54000 },
+  { name: '150 GB', duration: '30 Hari', price: 59000 },
+  { name: '170 GB', duration: '30 Hari', price: 64000 },
+  { name: '200 GB', duration: '30 Hari', price: 72000 },
+  { name: '230 GB', duration: '30 Hari', price: 78000 },
+  { name: '260 GB', duration: '30 Hari', price: 83000 },
+  { name: '300 GB', duration: '30 Hari', price: 89000 },
+  { name: '400 GB', duration: '30 Hari', price: 97000 },
+  { name: '500 GB', duration: '30 Hari', price: 108000 },
+],
+im3: [
+  { name: '30 GB', duration: '30 Hari', price: 23000 },
+  { name: '40 GB', duration: '30 Hari', price: 28000 },
+  { name: '55 GB', duration: '30 Hari', price: 34000 },
+  { name: '70 GB', duration: '30 Hari', price: 39000 },
+  { name: '85 GB', duration: '30 Hari', price: 45000 },
+  { name: '100 GB', duration: '30 Hari', price: 52000 },
+  { name: '120 GB', duration: '30 Hari', price: 58000 },
+  { name: '140 GB', duration: '30 Hari', price: 63000 },
+  { name: '160 GB', duration: '30 Hari', price: 69000 },
+  { name: '190 GB', duration: '30 Hari', price: 76000 },
+  { name: '220 GB', duration: '30 Hari', price: 82000 },
+  { name: '250 GB', duration: '30 Hari', price: 88000 },
+  { name: '300 GB', duration: '30 Hari', price: 95000 },
+  { name: '400 GB', duration: '30 Hari', price: 105000 },
+  { name: 'Unlimited', duration: '30 Hari', price: 125000 },
+],
+byu: [
+  { name: '25 GB', duration: '30 Hari', price: 21000 },
+  { name: '35 GB', duration: '30 Hari', price: 26000 },
+  { name: '50 GB', duration: '30 Hari', price: 31000 },
+  { name: '65 GB', duration: '30 Hari', price: 36000 },
+  { name: '80 GB', duration: '30 Hari', price: 42000 },
+  { name: '95 GB', duration: '30 Hari', price: 47000 },
+  { name: '110 GB', duration: '30 Hari', price: 53000 },
+  { name: '130 GB', duration: '30 Hari', price: 58000 },
+  { name: '150 GB', duration: '30 Hari', price: 64000 },
+  { name: '180 GB', duration: '30 Hari', price: 71000 },
+  { name: '210 GB', duration: '30 Hari', price: 77000 },
+  { name: '250 GB', duration: '30 Hari', price: 84000 },
+  { name: '300 GB', duration: '30 Hari', price: 92000 },
+  { name: '400 GB', duration: '30 Hari', price: 102000 },
+  { name: 'Unlimited', duration: '30 Hari', price: 130000 },
+ ]
+};
+    const quickAnswers = {
+      'Bagaimana cara mengisi kuota?': 'Berikut langkah-langkahnya:\n📱 1. Masukkan nomor handphone Anda\n🏢 2. Pilih operator seluler\n📦 3. Pilih paket kuota\n💳 4. Lakukan pembayaran\n✅ 5. Kuota langsung terisi!\n\nProses hanya butuh beberapa menit. 😊',
+      'Berapa lama proses pengisian?': '⚡ Waktu proses pengisian kuota:\n🔄 Setelah pembayaran: 1-5 detik\n💰 Verifikasi pembayaran: 1-10 menit\n📲 Kuota aktif di nomor: Langsung!\n\nJika melebihi 30 menit, hubungi support! 📞',
+      'Apa metode pembayaran yang tersedia?': '💳 Metode pembayaran kami:\n🏦 Transfer Bank (BCA, Mandiri, BRI, BNI)\n📱 E-Wallet (OVO, Dana, GoPay, LinkAja)\n💰 Kartu Kredit (Visa, Mastercard)\n📲 Mobile Banking\n\nSemua metode aman dan terpercaya! 🔒',
+      'Bagaimana jika pengisian gagal?': '🛡️ Jaminan Kami:\n✅ Pembayaran gagal = Dana kembali otomatis\n⏱️ Waktu refund: maksimal 24 jam\n🆘 Butuh bantuan cepat? Chat support kami\n\n💯 Kami berkomitmen 100% kepuasan pelanggan!'
+    };
+
+    let selectedProvider = null;
+    let selectedPackage = null;
+
+    function formatRupiah(n) {
+      return 'Rp ' + n.toLocaleString('id-ID');
+    }
+
+    function renderProviders() {
+      const grid = document.getElementById('provider-grid');
+      const phone = document.getElementById('phone-input').value.trim();
+
+      grid.innerHTML = providers.map(p => `
+        <button onclick="selectProvider('${p.id}')" class="provider-card bg-neutral-900 border border-neutral-800 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer text-white ${!phone ? 'opacity-50 cursor-not-allowed' : ''}" data-provider="${p.id}" ${!phone ? 'disabled' : ''}>
+          <span class="text-xs font-semibold text-neutral-300">${p.name}</span>
+        </button>
+      `).join('');
+    }
+
+    function selectProvider(id) {
+      const phone = document.getElementById('phone-input').value.trim();
+
+      if (!phone) {
+        alert('Silakan masukkan nomor handphone terlebih dahulu!');
+        return;
+      }
+
+      selectedProvider = providers.find(p => p.id === id);
+      selectedPackage = null;
+      document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('active'));
+      document.querySelector(`[data-provider="${id}"]`).classList.add('active');
+      document.getElementById('packages-section').classList.remove('hidden');
+      document.getElementById('provider-name').textContent = selectedProvider.name;
+      document.getElementById('summary-section').classList.add('hidden');
+      renderPackages(id);
+    }
+
+    function renderPackages(id) {
+      const grid = document.getElementById('packages-grid');
+      grid.innerHTML = packages[id].map((pkg, i) => `
+        <button onclick="selectPackage(${i})" class="package-card bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-left cursor-pointer" data-pkg="${i}">
+          <div class="text-lg font-bold text-white">${pkg.name}</div>
+          <div class="text-xs text-neutral-500 mt-1">${pkg.duration}</div>
+          <div class="text-sm font-bold text-red-500 mt-2">${formatRupiah(pkg.price)}</div>
+        </button>
+      `).join('');
+    }
+
+    function selectPackage(i) {
+      selectedPackage = packages[selectedProvider.id][i];
+      document.querySelectorAll('.package-card').forEach(c => c.classList.remove('selected'));
+      document.querySelector(`[data-pkg="${i}"]`).classList.add('selected');
+      const phone = document.getElementById('phone-input').value || '81234xxxxx';
+      document.getElementById('sum-provider').textContent = selectedProvider.name;
+      document.getElementById('sum-package').textContent = selectedPackage.name + ' / ' + selectedPackage.duration;
+      document.getElementById('sum-phone').textContent = '+62' + phone;
+      document.getElementById('sum-price').textContent = formatRupiah(selectedPackage.price);
+      document.getElementById('summary-section').classList.remove('hidden');
+    }
+
+    document.getElementById('phone-input').addEventListener('input', () => {
+      renderProviders();
+    });
+
+    document.getElementById('btn-order').addEventListener('click', () => {
+      openPaymentModal();
+    });
+
+    function openPaymentModal() {
+      const modal = document.getElementById('payment-modal');
+      const now = new Date();
+      const expiry = new Date(now.getTime() + 15 * 60000);
+
+      document.getElementById('purchase-time').textContent = now.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+      document.getElementById('expiry-time').textContent = expiry.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+      document.getElementById('payment-amount').textContent = formatRupiah(selectedPackage.price);
+
+      modal.classList.remove('hidden');
+    }
+
+    function closePaymentModal() {
+      document.getElementById('payment-modal').classList.add('hidden');
+    }
+
+    function confirmPayment() {
+      closePaymentModal();
+      
+      // Generate random transaction ID
+      const randomNum = Math.floor(Math.random() * 1000000).toString().padStart(7, '0');
+      const year = new Date().getFullYear();
+      const trxId = `#TRX-${year}-${randomNum}`;
+      document.getElementById('trx-id').textContent = trxId;
+      
+      const toast = document.getElementById('toast');
+      toast.classList.remove('hidden');
+
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        selectedProvider = null;
+        selectedPackage = null;
+        document.getElementById('phone-input').value = '';
+        document.getElementById('packages-section').classList.add('hidden');
+        document.getElementById('summary-section').classList.add('hidden');
+        document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('active'));
+        renderProviders();
+      }, 20000);
+    }
+
+    function cancelPayment() {
+      closePaymentModal();
+    }
+
+    // Live Chat
+    const chatBtn = document.getElementById('chat-btn');
+    const chatWindow = document.getElementById('chat-window');
+    const closeChat = document.getElementById('close-chat');
+    const sendBtn = document.getElementById('send-btn');
+    const chatInput = document.getElementById('chat-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    let hasAnsweredQuestion = false;
+
+    function getCurrentTime() {
+      const now = new Date();
+      return now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    }
+
+    function addUserMessage(text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'flex gap-2 justify-end';
+      msgDiv.innerHTML = `
+        <div class="bg-red-600 text-white rounded-xl px-3 py-2 max-w-xs">
+          <p class="text-sm">${text}</p>
+          <span class="text-xs opacity-80 mt-1 block text-right">${getCurrentTime()}</span>
+        </div>
+      `;
+      chatMessages.appendChild(msgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addCSMessage(text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'flex gap-2';
+      msgDiv.innerHTML = `
+        <svg class="w-8 h-8 bg-red-600 rounded-full p-1.5 flex-shrink-0" viewBox="0 0 24 24" fill="white">
+         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+        </svg>
+        <div class="bg-white border border-neutral-200 rounded-xl px-3 py-2 max-w-xs">
+          <p class="text-sm text-neutral-800 whitespace-pre-wrap">${text}</p>
+          <span class="text-xs text-neutral-400 mt-1 block">${getCurrentTime()}</span>
+        </div>
+      `;
+      chatMessages.appendChild(msgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function selectQuestion(question) {
+      const quickQuestionsDiv = document.getElementById('quick-questions');
+      if (quickQuestionsDiv) quickQuestionsDiv.remove();
+
+      addUserMessage(question);
+
+      setTimeout(() => {
+        addCSMessage(quickAnswers[question]);
+        hasAnsweredQuestion = true;
+        const waitingMsg = document.getElementById('waiting-message');
+        if (waitingMsg) waitingMsg.classList.remove('hidden');
+      }, 500);
+    }
+
+    chatBtn.addEventListener('click', () => {
+      chatWindow.classList.toggle('hidden');
+      if (!chatWindow.classList.contains('hidden')) {
+        setTimeout(() => chatInput.focus(), 200);
+      }
+    });
+
+    closeChat.addEventListener('click', () => {
+      chatWindow.classList.add('hidden');
+    });
+
+    function sendMessage() {
+      const message = chatInput.value.trim();
+      if (message === '') return;
+
+      addUserMessage(message);
+      chatInput.value = '';
+
+      setTimeout(() => {
+        if (hasAnsweredQuestion) {
+          addCSMessage('Pesanan atau pertanyaan Anda sedang diproses. Harap sabar... 🙏');
+        } else {
+          addCSMessage('Halo! 👋 Ada yang bisa kami bantu?');
+        }
+      }, 500);
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Mobile Menu Toggle
+    document.getElementById('menu-toggle').addEventListener('click', () => {
+      const menu = document.getElementById('mobile-menu');
+      menu.classList.toggle('hidden');
+    });
+
+    // Initialize
+    renderProviders();
+    lucide.createIcons();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f4d0b92647bb585',t:'MTc3NzYyMDI1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
